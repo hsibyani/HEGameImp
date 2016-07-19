@@ -51,6 +51,7 @@ int move_right(vector<long> &v, long &nslots)
         if(v[i]==1){
             v[i]=0;
             v[i+1]=1;
+            break;
         }
     }
     return 0;
@@ -62,6 +63,7 @@ int move_left(vector<long> &v, long &nslots)
         if(v[i]==1){
             v[i]=0;
             v[i-1]=1;
+            break;
         }
     }
     return 0;
@@ -80,11 +82,10 @@ Ctxt send_and_recieve(Ctxt &ct_position, Ctxt &ct_floor)
     return ct_result;
 }
 
-vector<long> decipher(Ctxt &ct_result, FHESecKey &secretkey, EncryptedArray &ea)
+int decipher(Ctxt &ct_result, FHESecKey &secretkey, EncryptedArray &ea, vector<long> &res)
 {
-    vector<long> res;
     ea.decrypt(ct_result, secretkey, res);
-    return res;
+    return 0;
 }
 
 int winning_check(vector<long> &v, long &nslots)
@@ -98,6 +99,31 @@ int winning_check(vector<long> &v, long &nslots)
     return 0;
 }
 
+int initialize_game_board(vector<long> &game_board, long &nslots, int &size, int &fruit_x_position, int &fruit_y_position)
+{
+   for(int i=0; i<nslots; i++){
+      game_board.push_back(0);
+   }
+  game_board[fruit_y_position*size+fruit_x_position]=1;
+  return 0;
+}
+
+int initialize_player_position(vector<long> &player_position, long &nslots, int &size, int &player_x_position, int &player_y_position){
+    for(int i=0; i<nslots; i++){
+        player_position.push_back(0);
+    }
+    player_position[player_y_position*size+player_x_position]=1;
+    return 0;
+}
+
+int move_wrapper(vector<long> &player_position, long &nslots, Ctxt &ctEq, const FHEPubKey &publicKey, EncryptedArray &ea, Ctxt &encrypted_game_board, FHESecKey &secretkey, vector<long> &res)
+{
+    prep(player_position, ctEq, publicKey, ea);
+    ctEq=send_and_recieve(encrypted_game_board, ctEq);
+    decipher(ctEq, secretkey, ea, res);
+    winning_check(res, nslots);
+    return 0;
+}
 int main(int argc, char **argv)
 {
     /* On our trusted system we generate a new key
@@ -139,50 +165,56 @@ int main(int argc, char **argv)
    long nslots = ea.size();
    cout << "nslots: " << nslots << endl;
 
-   vector<long> vMult3;
-   Ctxt ctMult3(publicKey);
-   for(int i = 0 ; i < nslots; i++) {
-        vMult3.push_back(0);
-   }
-   int fruit_slot=8;
-   vMult3[fruit_slot]=1;
-   ea.encrypt(ctMult3, publicKey, vMult3);
+   int size = 3; 
+   int fruit_x_position = 2;
+   int fruit_y_position = 2;
 
-   vector<long> v3;
-   Ctxt ct3(publicKey);
-   for(int i=0;i<nslots; i++){
-	   v3.push_back(0);
-   }
-   v3[5]=1;
-//   ea.encrypt(ct3, publicKey, v3);
+   vector<long> game_board;
+   initialize_game_board(game_board, nslots, size, fruit_x_position, fruit_y_position);
 
-   // On the public (untrusted) system we
-   // can now perform our computation
+   Ctxt encrypted_game_board(publicKey);
+   ea.encrypt(encrypted_game_board, publicKey, game_board);
+
    
-   //Calculate 3x+7
-   //Ctxt ctEq = ct3;
-   //ctEq += ctMult3;
+   vector<long> player_position;
 
- //   vector<long> res;
+   int player_x_position = 2;
+   int player_y_position = 1;
+
+   initialize_player_position(player_position, nslots, size, player_x_position, player_y_position);
 
     cout << "All computations are modulo " << std::pow(p,r) << "." << endl;
-    
 
     vector<long> res;
-    Ctxt ctEq=ct3;
-    positionize_me(v3, nslots);
-    prep(v3, ct3, publicKey, ea);
-    ctEq=send_and_recieve(ctMult3, ct3);
-    res=decipher(ctEq, secretKey, ea);
-    winning_check(res, nslots);
 
-    move_up(v3, nslots);
-    positionize_me(v3, nslots);
-    prep(v3, ct3, publicKey, ea);
-    ctEq=send_and_recieve(ctMult3, ct3);
-    res=decipher(ctEq, secretKey, ea);
-    winning_check(res, nslots);
+    Ctxt ctEq(publicKey);
 
+    while(true){
+        cout << "Write something" << endl;
+        char tmp;
+        cin >> tmp;
+        cout << "You have entered: " << tmp  << endl;
+        
+        if(tmp=='u'){
+            move_up(player_position, nslots);
+            positionize_me(player_position, nslots);
+            move_wrapper(player_position, nslots, ctEq, publicKey, ea, encrypted_game_board, secretKey, res);
+        }
+        if(tmp=='d'){
+            move_down(player_position, nslots);
+            positionize_me(player_position, nslots);
+            move_wrapper(player_position, nslots, ctEq, publicKey, ea, encrypted_game_board, secretKey, res);
+        }
+        if(tmp=='r'){
+            move_right(player_position, nslots);
+            positionize_me(player_position, nslots);
+            move_wrapper(player_position, nslots, ctEq, publicKey, ea, encrypted_game_board, secretKey, res);
+        }
+        if(tmp=='l'){
+            move_left(player_position, nslots);
+            positionize_me(player_position, nslots);
+            move_wrapper(player_position, nslots, ctEq, publicKey, ea, encrypted_game_board, secretKey, res);
+        }
+    }
     return 0;
 }
-
