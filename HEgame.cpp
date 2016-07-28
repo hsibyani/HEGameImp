@@ -104,7 +104,7 @@ int winning_check(vector<long> &v, long &nslots)
     {
         if(v[i]==1)
         {
-            cout << "You have found the gem in position: (" << i%3 << "," << i/3 << ")." << endl;
+            cout << "You have found the fruit in position: (" << i%3 << "," << i/3 << ")." << endl;
             break;
         }
     }
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     long security = 128;
     ZZX G;
     m = FindM(security,L,c,p, d, 0, 0);
-
+    cout << "M value is: " << m << endl; 
     FHEcontext context(m, p, r);
     // initialize context
     buildModChain(context, L, c);
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 
     while(true)
     {
-        cout << "Write something" << endl;
+        cout << "Where do you want to go? (udlr)" << endl;
         char tmp;
         cin >> tmp;
         cout << "You have entered: " << tmp  << endl;
